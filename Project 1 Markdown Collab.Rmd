@@ -5,6 +5,8 @@ date: "2022-10-04"
 output: html_document
 ---
 
+kristen test thursday oct 6
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
