@@ -70,7 +70,7 @@ ggplot(diamonds, aes(x = carat, y = price, fill = cut))+
 ggplot(diamonds, aes(x = color, y = price, fill = clarity))+
   geom_boxplot()
 
-ggplot(diamonds, aes(x = color, y = price, fill = cut))+
+ggplot(diamonds, aes(x = clarity, y = carat, fill = cut))+
   geom_boxplot()
 
 ggplot(diamonds, aes(x = clarity, y = price, fill = cut))+
@@ -106,3 +106,4 @@ ggplot(diamonds, aes(x = clarity2))+
   geom_bar(fill = "blue")+
   labs(x = "Clarity", y = "Count", title="Clarity Counts")
 
+quartiles(diamonds$carat)
