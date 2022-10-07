@@ -1,0 +1,204 @@
+---
+title: "Project 1 Brainstorm"
+author: "Kristen Rose"
+date: "2022-10-05"
+output: html_document
+---
+
+# Loading Data and Packages
+
+```{r}
+diamonds <- read.csv("diamonds4.csv", header=TRUE)
+library(tidyverse)
+```
+
+# Data Manipulation
+
+
+```{r}
+diamonds$cut.order <- factor(diamonds$cut)
+diamonds$cut.order <- factor(diamonds$cut.order, c("Good", "Very Good", "Ideal", "Astor Ideal"))
+new.levels<-c("Good or Very Good", "Good or Very Good", "Ideal or Astor Ideal", "Ideal or Astor Ideal")
+cut2 <- factor(new.levels[diamonds$cut.order])
+levels(cut2)
+diamonds <- data.frame(diamonds, cut2)
+```
+
+```{r}
+diamonds$color.order <- factor(diamonds$color)
+diamonds$color.order <- factor(diamonds$color.order, c("J", "I", "H", "G", "F", "E", "D"))
+new.levels2<-c('Near-colorless','Near-colorless','Near-colorless','Near-colorless','Colorless','Colorless','Colorless')
+color2 <- factor(new.levels2[diamonds$color.order])
+levels(color2)
+diamonds <- data.frame(diamonds, color2)
+```
+
+```{r}
+diamonds$clarity.order <- factor(diamonds$clarity)
+diamonds$clarity.order <- factor(diamonds$clarity.order, c("SI1","SI2","VS1","VS2","VVS1","VVS2","IF","FL"))
+new.levels3 <- c("Slightly Included", "Slightly Included", "Very Slightly Included", "Very Slightly Included", "Very, Very Slightly Included", "Very, Very Slightly Included", "Internally Flawless or Flawless", "Internally Flawless or Flawless")
+clarity2 <- factor(new.levels3[diamonds$clarity.order])
+levels(clarity2)
+diamonds <- data.frame(diamonds, clarity2)
+diamonds$clarity2 <- factor(diamonds$clarity2, c("Slightly Included", "Very Slightly Included", "Very, Very Slightly Included", "Internally Flawless or Flawless"))
+```
+
+```{r}
+carat2 <- ifelse(diamonds$carat<2.0, "< 2.0 carats", ">= 2.0 carats")
+diamonds <- data.frame(diamonds, carat2)
+```
+```{r}
+median(diamonds$carat)
+```
+
+```{r}
+carat3<-cut(diamonds$carat, breaks = c(-Inf, 1, 2, Inf),
+labels = c("Less than 1 carat", "1-2 carats", "More than 2 carats"))
+```
+
+# Data Visualizations
+
+**How is price related to other variables?**
+
+Price and Carat
+
+```{r}
+diamonds$log.price <- log(diamonds$price)
+
+ggplot(diamonds, aes(x=carat,y=log.price))+
+  geom_point()
+```
+
+Price and Clarity
+
+```{r}
+ggplot(diamonds, aes(x=clarity2, y=log.price))+
+  geom_boxplot(color="black", outlier.color = "gray")
+```
+
+Price and Color
+
+```{r}
+ggplot(diamonds, aes(x=color2, y=log.price))+
+  geom_boxplot(color="black", outlier.color = "yellow")
+```
+
+Price and Cut
+
+```{r}
+ggplot(diamonds, aes(x=cut2, y=log.price))+
+  geom_boxplot(color="black", outlier.color = "green")
+```
+
+**How do other variables relate to each other?**
+
+
+```{r}
+ggplot(diamonds,aes(x=clarity2, fill=cut2))+
+geom_bar(position = "fill")+
+labs(x="Clarity", y="Count", title="Cut of Diamond by Clarity", fill="Cut")
+
+```
+
+- As the clarity improves, the diamond is more likely to have an Ideal or Astor Ideal cut.
+
+```{r}
+ggplot(diamonds, aes(x=carat2, y=log.price, fill=cut2))+
+geom_boxplot()+
+labs(x="Carat", y="log.price", fill="Cut",
+title="Distribution of Price by Cut & Carat")
+```
+
+- Interesting to note in the above graph that for smaller diamonds, ideal cuts have a slightly lower median price than good cuts.
+
+```{r}
+ggplot(diamonds,aes(x=carat2, fill=cut2))+
+geom_bar()+
+facet_wrap(~clarity2)+
+labs(x="Carat", y="Count", fill="Cut")
+```
+
+- Interesting to note in the above graph that there tend to be a greater percentage of ideal cuts for smaller rings than larger diamonds - for both colorless and near-colorless diamonds. 
+
+# Simple Linear Regression
+
+```{r}
+ggplot(diamonds, aes(x=carat,y=price))+
+  geom_point()+
+  geom_smooth(method = "lm", se=FALSE)+
+  labs(x="Carat", y="Price", title="Scatterplot of Price Against Carat")
+```
+
+```{r}
+result<-lm(price~carat, data=diamonds)
+
+##store fitted y & residuals
+yhat<-result$fitted.values
+res<-result$residuals
+
+##add to data frame
+diamonds<-data.frame(diamonds,yhat,res)
+
+##residual plot
+ggplot(diamonds, aes(x=yhat,y=res))+
+  geom_point()+
+  geom_hline(yintercept=0, color="red")+
+  labs(x="Fitted y", y="Residuals", title="Residual Plot")
+```
+
+```{r}
+library(MASS)
+boxcox(result, lambda = seq(0, 0.5, 1/10))
+```
+
+```{r}
+ystar<-log(diamonds$price)
+diamonds<-data.frame(diamonds,ystar)
+result.ystar<-lm(ystar~carat, data=diamonds)
+
+##store fitted y & residuals
+yhat2<-result.ystar$fitted.values
+res2<-result.ystar$residuals
+
+##add to data frame
+diamonds<-data.frame(diamonds,yhat2,res2)
+
+##residual plot with ystar
+ggplot(diamonds, aes(x=yhat2,y=res2))+
+  geom_point()+
+  geom_hline(yintercept=0, color="red")+
+  labs(x="Fitted y", y="Residuals", title="Residual Plot with ystar")
+```
+
+
+```{r}
+ggplot(diamonds, aes(x=carat,y=ystar))+
+  geom_point()+
+  geom_smooth(method = "lm", se=FALSE)+
+  labs(x="Carat", y="Price", title="Scatterplot of Transformed Price Against Carat")
+```
+
+```{r}
+xstar = log(diamonds$carat)
+diamonds = data.frame(diamonds,xstar)
+result.xstar<-lm(ystar~xstar, data=diamonds)
+
+yhat3<-result.xstar$fitted.values
+res3<-result.xstar$residuals
+
+##add to data frame
+diamonds<-data.frame(diamonds,yhat3,res3)
+
+##residual plot with xstar
+ggplot(diamonds, aes(x=yhat3,y=res3))+
+  geom_point()+
+  geom_hline(yintercept=0, color="red")+
+  labs(x="Fitted y", y="Residuals", title="Residual Plot with xstar")
+```
+```{r}
+ggplot(diamonds, aes(x=xstar,y=ystar))+
+  geom_point()+
+  geom_smooth(method = "lm", se=FALSE)+
+  labs(x="Carat", y="Price", title="Scatterplot of Transformed Price Against Carat")
+```
+
