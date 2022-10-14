@@ -13,6 +13,9 @@ diamonds <- read.csv("diamonds.csv", header=TRUE)
 diamonds$color <- factor(diamonds$color, levels = c("J", "I", "H", "G", "F", "E", "D"))
 diamonds$clarity <- factor(diamonds$clarity, levels = c("SI2", "SI1", "VS2", "VS1", "VVS2", "VVS1", "IF", "FL"))
 diamonds$cut <- factor(diamonds$cut, levels = c("Good", "Very Good", "Ideal", "Astor Ideal"))
+logprice <- log(diamonds$price)
+diamonds <- data.frame(diamonds,logprice)
+
 ```
 
 # Section I. Executive Summary
@@ -21,9 +24,10 @@ diamonds$cut <- factor(diamonds$cut, levels = c("Good", "Very Good", "Ideal", "A
 |       One of several online diamond retailers is Blue Nile. Founded in 1999, Blue Nile is primarily an online diamond and jewelry retailer, but they also have physical showrooms scattered across the United States. Blue Nile was one of the first companies to leverage the modern online retail format. They provide consumers with a wealth of expert advice on their website when it comes to picking the right diamond. This analysis serves to interrogate that expert advice.    
 
 |       Data was analyzed from 1,214 diamonds sold by Blue Nile of varying color, clarity, cut type, and carat weight, to discern the driving factors behind diamond price. In addition to price drivers, the inter-relationship between diamond qualities was explored. The results of this analysis suggest the following: 
-For a 1% increase in carat weight, there is a 1.9% increase in price. For example, if a 1 carat diamond is approximately $5,000.00, a 2 carat diamond (100% increase in carat weight) is approximately $19,000.00 (190% increase in price).
-The median price for higher quality cuts of diamond are lower than those of lesser quality. The analysis revealed the median price of Ideal/Astor Ideal diamonds is actually lower than the median price for Good/Very Good diamonds, despite cut having “the greatest influence on a diamond’s beauty and sparkle” according to Blue Nile. 
-Behind carat weight, color had the largest impact on price when controlling for the effect of cut type. “Colorless” diamonds on average have a higher price than those which are classified as “Near Colorless”. 
+1. For a 1% increase in carat weight, there is a 1.9% increase in price. For example, if a 1 carat diamond is approximately $5,000.00, a 2 carat diamond (100% increase in carat weight) is approximately $19,000.00 (190% increase in price).
+2. The median price for higher quality cuts of diamond are lower than those of lesser quality. The analysis revealed the median price of Ideal/Astor Ideal diamonds is actually lower than the median price for Good/Very Good diamonds, despite cut having “the greatest influence on a diamond’s beauty and sparkle” according to Blue Nile. 
+3. Behind carat weight, color had the largest impact on price when controlling for the effect of cut type. “Colorless” diamonds on average have a higher price than those which are classified as “Near Colorless”.
+4. Placeholder for Clarity comments
 
 # Section II. Data Description and Visualizations
 ## Description of Data
@@ -36,6 +40,40 @@ Behind carat weight, color had the largest impact on price when controlling for 
 * **Cut** is an assessment of how well-proportioned the dimensions of the diamond are and how well shaped and positioned its facets are. The diamonds in our sample range contain cuts graded Good, Very Good, Ideal and Astor Ideal. Ideal cut is a term used by Blue Nile and is equivalent to the grade Excellent use by the Gemological Institute of America.
 
 ## Visualizations
+
+### Carat Weight
+According to Blue Nile Carat weight has the biggest effect on price. They indicate that this is due to the carat size of the diamond becoming a status symbol. From the graph below we can see that as carat weight increases the price of the diamnond also increases agressively and non-linearly. The variance of the price also increases as the carat weight increases. Further analysis of the Carat weight and it's effect on price is explored in the linear model in section 3.
+```{r}
+ggplot(diamonds, aes(x = carat, y = price))+
+  geom_point(alpha = 0.2)+
+  labs(x = "Carats", y = "Price($)", title = "Scatterplot of Price vs. Carat Weight")
+```
+
+
+
+### Cut
+Blue Nile considers the cut of a diamond the most important of the 4Cs when determining quality. However from our analysis of the cut this does not necessarily translate to the price of the diamond. When analyzing the price across the different cut qualities the price was not impacted significantly by the cut as shown below.
+```{r}
+cut2.levels <- c("Good/Very Good", "Good/Very Good", "Ideal/Astor Ideal", "Ideal/Astor Ideal")
+cut2 <- factor(cut2.levels[diamonds$cut])
+diamonds <- data.frame(diamonds, cut2)
+
+ggplot(diamonds, aes(x = cut2, y = logprice))+
+  geom_boxplot()+
+  labs(x = "Cut", y = "Log(Price)", title = "Boxplot of Log(Price) vs Cut")
+```
+When viewing the boxplots with price on the y axis the large spread of price with a majority clustered at the low end of the range made the boxplots difficult to analyze. To increase the readability of the plot of the price the log transform was used. Diamond cuts have been collapsed into two categories: Good or Very Good and Ideal or Astor Ideal. Blue Nile claims that cut is the most important element that should be considered when choosing a diamond and that Ideal or Astor Ideal cuts are the best quality one can get. A counterintuitive finding from this plot is that the median price for Ideal or Astor Ideal diamonds is slightly lower than the median price for Good or Very Good diamonds. The Ideal or Astor Ideal diamonds, however, tend to range in price more than the Good or Very Good diamonds.
+
+```{r}
+ggplot(diamonds, aes(x = carat, y = price, color = cut2))+
+  geom_point(alpha = 0.2)+
+  labs(x = "Carats", y = "Price", color = "Cut", title = "Scatterplot of Price vs Carats and Cut")
+```
+
+
+### Color
+
+### Clarity
 
 # Section III. Simple Linear Regression of Price Agaisnt Carat Weight
 |       A scatter plot of diamond price against carat weight was generated in order to begin exploring the relationship between those two variables.
@@ -100,9 +138,6 @@ ggplot(diamonds, aes(x = caratytransfitted, y = caratytransresid))+
 
 |       Next, a log transform of price was attempted. Since values of $\lambda$ < 1, including logarithmic transforms, all have the same directional effect, it is likely that a logarithmic transform of price will have a similar effect as the lambda = 0.3 transformation, just to a higher degree. A logarithmic transform also has the benefit of being more easily interpretable than an exponential transform, which will enable investigators to more easily make inferences about the relationship between price and carat weight. Below are the scatter plots of log-transformed price vs. carat weight and the residual plot of the simple linear regression that was applied. 
 ```{r}
-logprice <- log(diamonds$price)
-diamonds <- data.frame(diamonds,logprice)
-
 ggplot(diamonds, aes(x = carat, y = logprice))+
   geom_point()+
   geom_smooth(method = "lm", se = FALSE, color = "red")+
