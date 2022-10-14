@@ -1,32 +1,174 @@
 ---
 title: "Project 1 Markdown File"
-author: "Alex Lilly"
+author: "Alex Lilly, Alex Kendrick, Chi Do, Kristen Rose"
 date: "2022-10-04"
-output: html_document
+output: pdf_document
 ---
-
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, tidy = TRUE, tidy.opts=list(width.cutoff=55))
+library(tidyverse)
+library(MASS)
+
+diamonds <- read.csv("diamonds.csv", header=TRUE)
+diamonds$color <- factor(diamonds$color, levels = c("J", "I", "H", "G", "F", "E", "D"))
+diamonds$clarity <- factor(diamonds$clarity, levels = c("SI2", "SI1", "VS2", "VS1", "VVS2", "VVS1", "IF", "FL"))
+diamonds$cut <- factor(diamonds$cut, levels = c("Good", "Very Good", "Ideal", "Astor Ideal"))
 ```
 
-## R Markdown
+# Section I. Executive Summary
+|       Today’s diamond market began in the late 19th century in South Africa. Prior to the turn of the 20th century, annual diamond production was under 1 million carats, and by the turn of the 21st century, diamond production increased to over 100 million carats per year. In addition to improvements in mining and sourcing which bolstered the supply of diamonds, the diamond market has changed drastically compared to its status even a decade ago. Numerous online diamond retailers exist today and allow consumers to hand pick diamonds and craft jewelry to fit their desires. As a result, the factors driving the price of diamond jewelry are brought to the forefront of the consumer's attention as they browse the web pages of drop down menus and sliders searching for the perfect diamond. 
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+|       One of several online diamond retailers is Blue Nile. Founded in 1999, Blue Nile is primarily an online diamond and jewelry retailer, but they also have physical showrooms scattered across the United States. Blue Nile was one of the first companies to leverage the modern online retail format. They provide consumers with a wealth of expert advice on their website when it comes to picking the right diamond. This analysis serves to interrogate that expert advice.    
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+|       Data was analyzed from 1,214 diamonds sold by Blue Nile of varying color, clarity, cut type, and carat weight, to discern the driving factors behind diamond price. In addition to price drivers, the inter-relationship between diamond qualities was explored. The results of this analysis suggest the following: 
+For a 1% increase in carat weight, there is a 1.9% increase in price. For example, if a 1 carat diamond is approximately $5,000.00, a 2 carat diamond (100% increase in carat weight) is approximately $19,000.00 (190% increase in price).
+The median price for higher quality cuts of diamond are lower than those of lesser quality. The analysis revealed the median price of Ideal/Astor Ideal diamonds is actually lower than the median price for Good/Very Good diamonds, despite cut having “the greatest influence on a diamond’s beauty and sparkle” according to Blue Nile. 
+Behind carat weight, color had the largest impact on price when controlling for the effect of cut type. “Colorless” diamonds on average have a higher price than those which are classified as “Near Colorless”. 
 
-```{r cars}
-summary(cars)
+# Section II. Data Description and Visualizations
+## Description of Data
+|       For each diamond in the sample five data elements were collected: price, carat, color, clarity, and cut. 
+
+* **Price** is used to measure the value of the diamonds in US dollars.
+* **Carat** describes the weight of the diamond in the unit carats. Since 1907 one carat is defined as equivalent to 200 milligrams.
+* **Color** is a measure of how colorless white diamonds are. The less color the higher the grade. The scale used to measure color ranges from Z at the low end to D at the high end. The subset of diamonds in our sample has a minimum rated color of J. Colored diamonds do not use this scale and some intensely colored diamonds are in high demand. For some analysis we bucketed the color grades into near-colorless (G-J) and colorless (D-F) based on the definitions from Blue Nile.
+* **Clarity** is used to categorize imperfections on the surface and within a diamond. Surface imperfections are blemishes and internal imperfections are inclusions The categorizations are determined by how obvious and numerous the diamonds imperfections are. The range of diamonds in our sample from low to high is Slightly Included (SI2, SI1), Very Slightly Included (VS2, VS1), Very, Very Slightly Included (VVS2, VVS1), Internally Flawless (IF), and Flawless (FL). For some analysis we collapsed the number differences in categories (i.e. SI2 and SI1 are bucketed as SI) and combined IF and FL.
+* **Cut** is an assessment of how well-proportioned the dimensions of the diamond are and how well shaped and positioned its facets are. The diamonds in our sample range contain cuts graded Good, Very Good, Ideal and Astor Ideal. Ideal cut is a term used by Blue Nile and is equivalent to the grade Excellent use by the Gemological Institute of America.
+
+## Visualizations
+
+# Section III. Simple Linear Regression of Price Agaisnt Carat Weight
+|       A scatter plot of diamond price against carat weight was generated in order to begin exploring the relationship between those two variables.
+
+```{r}
+ggplot(diamonds, aes(x = carat, y = price))+
+  geom_point(alpha = 0.2)+
+  geom_smooth(method = "lm", se = FALSE, color = "red")+
+  labs(x = "Carat Weight", y = "Price ($)", title = "Scatter Plot of Price against Carat Weight")
 ```
 
-## Including Plots
+|       Evidently, as carat weight increases, the price of the diamond also increases non-linearly. There also appears to be a scarcity of diamonds with higher carat weight as the density of data decreases as carat weight increases.  
 
-You can also embed plots, for example:
+|       Fitting a simple linear regression model and calculating the residuals yields the following residual plot.  
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+caratmodel <- lm(price~carat, data = diamonds)
+caratresid <- caratmodel$residuals
+caratfitted <- caratmodel$fitted.values
+
+diamonds <- data.frame(diamonds,caratresid,caratfitted)
+ggplot(diamonds, aes(x = caratfitted, y = caratresid))+
+  geom_point(alpha = 0.2)+
+  geom_hline(yintercept = 0, color="red")+
+  labs(x = "Predicted Price ($)", y = "Residual", title = "Residual Plot of Simple Linear Regression Model")
+```
+|       There are regions of the residual plot where the error does not have mean zero, and the variance appears to be increasing as the predicted price increases.  
+
+|       Next, the Box-Cox method was used to determine the most likely transformation that could be applied to the predicted variable, in this case price, in order to generate a distribution that is normal.  
+
+
+```{r}
+boxcox(caratmodel, lambda = seq(0.2, .4, 1/10))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+|   The Box-Cox plot suggests a transform of $y^{\lambda}$ where $\lambda$ = 0.3 would yield a distribution of prices that is most likely to align with a normal distribution. Below are scatter plots of transformed price vs. carat weight and the residual plot of the resulting simple linear regression that was applied.  
+  
+  
+```{r}
+pricelamb <- (diamonds$price)^0.3
+diamonds <- data.frame(diamonds,pricelamb)
 
-kristen test
+ggplot(diamonds, aes(x = carat, y = pricelamb))+
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE, color = "red")+
+  labs(x = "Carat Weight", y = "Price^(0.3)", title = "Scatter Plot of Price^(0.3) against Carat Weight")
+```
+```{r}
+caratytransmodel <- lm(pricelamb~carat, data = diamonds)
+caratytransresid <- caratytransmodel$residuals
+caratytransfitted <- caratytransmodel$fitted.values
+
+diamonds <- data.frame(diamonds,caratytransresid,caratytransfitted)
+
+ggplot(diamonds, aes(x = caratytransfitted, y = caratytransresid))+
+  geom_point()+
+  geom_hline(yintercept = 0, color = "red")+
+  labs(x = "Predicted Price^(0.3)", y = "Residual", title = "Residual Plot of Simple Linear Regresson Model")
+```
+
+|       From the scatter plot alone it is evident that the relationship between price and carat weight was linearized partially. In the residual plot, the issue of non-zero error means in some regions persists. Again, the issue of non-constant variance is present. This model can be improved.
+
+|       Next, a log transform of price was attempted. Since values of $\lambda$ < 1, including logarithmic transforms, all have the same directional effect, it is likely that a logarithmic transform of price will have a similar effect as the lambda = 0.3 transformation, just to a higher degree. A logarithmic transform also has the benefit of being more easily interpretable than an exponential transform, which will enable investigators to more easily make inferences about the relationship between price and carat weight. Below are the scatter plots of log-transformed price vs. carat weight and the residual plot of the simple linear regression that was applied. 
+```{r}
+logprice <- log(diamonds$price)
+diamonds <- data.frame(diamonds,logprice)
+
+ggplot(diamonds, aes(x = carat, y = logprice))+
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE, color = "red")+
+  labs(x = "Carat Weight", y = "log(Price)", title = "Scatter Plot of log(Price) against Carat Weight")
+```
+
+```{r}
+logymodel <- lm(logprice~carat, data = diamonds)
+logyresid <- logymodel$residuals
+logyfitted <- logymodel$fitted.values
+
+diamonds <- data.frame(diamonds,logyresid,logyfitted)
+
+ggplot(diamonds, aes(x = logyfitted, y = logyresid))+
+  geom_point()+
+  geom_hline(yintercept = 0, color = "red")+
+  labs(x = "Predicted log(Price)", y = "Residual", title = "Residual Plot of Simple Linear Regression Model with log(y) Transform")
+```
+
+|       With the natural logarithm transformation of price, the issue of non-constant variance was addressed much better than it was with the $\lambda = 0.3$ transform. However the issue of not having residuals with mean equal to zero persists. To address this, a logarithmic transformation of carat weight was conducted in order to bring the carat weight distribution closer to normal. Below are the scatter plots of log-transformed price vs. log-transformed carat weight and the residual plot of the simple linear regression that was applied.
+
+```{r}
+logcarat <- log(diamonds$carat)
+diamonds <- data.frame(diamonds,logcarat)
+
+ggplot(diamonds, aes(x = logcarat, y = logprice))+
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE, color = "red")+
+  labs(x = "log(Carat Weight)", y = "log(Price)", title = "Scatter Plot of log(Price) against log(Carat Weight)")
+```
+
+```{r}
+logbothmodel <- lm(logprice~logcarat, data = diamonds)
+logbothresid <- logbothmodel$residuals
+logbothfitted <- logbothmodel$fitted.values
+
+diamonds <- data.frame(diamonds,logbothresid,logbothfitted)
+
+ggplot(diamonds, aes(x = logbothfitted, y = logbothresid))+
+  geom_point()+
+  geom_hline(yintercept = 0, color = "red")+
+  labs(x = "Predicted log(Price)", y = "Residual", title = "Residual Plot of Simple Linear Regression Model with log(y) and log(x) Transforms")
+```
+
+This simple linear regression model satisfied both of the following assumptions:  
+1. The errors, for each fixed value of x, have mean 0.  
+2. The errors, for each fixed value of x, have constant variance.  
+  
+|       To determine if this model satisfies the assumptions regarding error independence and whether the error term follows a normal distribution, an auto-correlation function plot and QQ plot were generated.
+
+```{r}
+acf(diamonds$logbothresid, main = "ACF Plot of Residuals")
+```
+
+|       The auto-correlation function calculates the correlation between error terms of varying window sizes from lag = 0 to lag = 10*$log_{10}$(N/m) where N is the number of elements in m number of series. In this case, N = 1,214 diamonds, and there is only 1 series of residuals. There are two instances, namely when lag = 4 and 7, where the ACF barely exceeds the threshold for statistical significance at the 95% confidence level. All other lag values are within the 95% confidence interval, indicating that the residuals are mostly independent. This satisfies the assumption that the errors are independent. 
+
+
+```{r}
+qqnorm(diamonds$logbothresid)
+qqline(diamonds$logbothresid, col = "red")
+```
+
+|       There are deviations from normality near the extremes of theoretical quantiles, but otherwise the residuals closely align with the normal distribution. This satisfies the fourth and final assumption for simple linear regression: the errors, for each fixed value of x, follow a normal distribution. 
+
+The final regression expression is:  
+  
+log(Price) = 1.944 * log(Carat Weight) + 8.521208.   
+  
+|       This model has an $R^2$ = 0.9547, indicating that the 95.47% of the variance in the price of diamonds can be explained by this regression equation. As mentioned previously, the benefit of using a log-log regression function over an exponential transformation lies in interpretability. From this regression function, it shows that for a 1% change in carat weight, there is a 1.9% change in price.  
