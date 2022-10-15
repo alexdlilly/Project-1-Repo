@@ -8,9 +8,8 @@ output: pdf_document
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, tidy = TRUE, tidy.opts=list(width.cutoff=55))
 library(tidyverse)
 library(MASS)
-library(ggpubr)
 
-diamonds <- read.csv("diamonds4.csv", header=TRUE)
+diamonds <- read.csv("diamonds.csv", header=TRUE)
 diamonds$color <- factor(diamonds$color, levels = c("J", "I", "H", "G", "F", "E", "D"))
 diamonds$clarity <- factor(diamonds$clarity, levels = c("SI2", "SI1", "VS2", "VS1", "VVS2", "VVS1", "IF", "FL"))
 diamonds$cut <- factor(diamonds$cut, levels = c("Good", "Very Good", "Ideal", "Astor Ideal"))
@@ -83,8 +82,7 @@ ggplot(diamonds, aes(x = carat, y = price, color = cut2))+
 ggplot(diamonds, aes(x = carat, y = price))+
   geom_point(alpha = 0.2)+
   geom_smooth(method = "lm", se = FALSE, color = "red")+
-  labs(x = "Carat Weight", y = "Price ($)", title = "Scatter Plot of Price against Carat Weight")+
-  theme_bw()
+  labs(x = "Carat Weight", y = "Price ($)", title = "Scatter Plot of Price against Carat Weight")
 ```
 
 |       Evidently, as carat weight increases, the price of the diamond also increases non-linearly. There also appears to be a scarcity of diamonds with higher carat weight as the density of data decreases as carat weight increases.  
@@ -100,8 +98,7 @@ diamonds <- data.frame(diamonds,caratresid,caratfitted)
 ggplot(diamonds, aes(x = caratfitted, y = caratresid))+
   geom_point(alpha = 0.2)+
   geom_hline(yintercept = 0, color="red")+
-  labs(x = "Predicted Price ($)", y = "Residual", title = "Residual Plot of Simple Linear Regression Model")+
-  theme_bw()
+  labs(x = "Predicted Price ($)", y = "Residual", title = "Residual Plot of Simple Linear Regression Model")
 ```
 |       There are regions of the residual plot where the error does not have mean zero, and the variance appears to be increasing as the predicted price increases.  
 
@@ -119,55 +116,45 @@ boxcox(caratmodel, lambda = seq(0.2, .4, 1/10))
 pricelamb <- (diamonds$price)^0.3
 diamonds <- data.frame(diamonds,pricelamb)
 
-sp <- ggplot(diamonds, aes(x = carat, y = pricelamb))+
-  geom_point(alpha=0.2)+
+ggplot(diamonds, aes(x = carat, y = pricelamb))+
+  geom_point()+
   geom_smooth(method = "lm", se = FALSE, color = "red")+
-  labs(x = "Carat Weight", y = "Price^(0.3)", title = "Scatter Plot of Price^(0.3) against Carat Weight")+
-  theme_bw()
-
+  labs(x = "Carat Weight", y = "Price^(0.3)", title = "Scatter Plot of Price^(0.3) against Carat Weight")
+```
+```{r}
 caratytransmodel <- lm(pricelamb~carat, data = diamonds)
 caratytransresid <- caratytransmodel$residuals
 caratytransfitted <- caratytransmodel$fitted.values
 
 diamonds <- data.frame(diamonds,caratytransresid,caratytransfitted)
 
-rp <- ggplot(diamonds, aes(x = caratytransfitted, y = caratytransresid))+
-  geom_point(alpha=0.2)+
+ggplot(diamonds, aes(x = caratytransfitted, y = caratytransresid))+
+  geom_point()+
   geom_hline(yintercept = 0, color = "red")+
-  labs(x = "Predicted Price^(0.3)", y = "Residual", title = "Residual Plot of Simple Linear Regresson Model")+
-  theme_bw()
-
-ggarrange(sp, rp,
-          ncol = 1, nrow = 2)
+  labs(x = "Predicted Price^(0.3)", y = "Residual", title = "Residual Plot of Simple Linear Regresson Model")
 ```
 
 |       From the scatter plot alone it is evident that the relationship between price and carat weight was linearized partially. In the residual plot, the issue of non-zero error means in some regions persists. Again, the issue of non-constant variance is present. This model can be improved.
 
 |       Next, a log transform of price was attempted. Since values of $\lambda$ < 1, including logarithmic transforms, all have the same directional effect, it is likely that a logarithmic transform of price will have a similar effect as the lambda = 0.3 transformation, just to a higher degree. A logarithmic transform also has the benefit of being more easily interpretable than an exponential transform, which will enable investigators to more easily make inferences about the relationship between price and carat weight. Below are the scatter plots of log-transformed price vs. carat weight and the residual plot of the simple linear regression that was applied. 
 ```{r}
-logprice <- log(diamonds$price)
-diamonds <- data.frame(diamonds,logprice)
-
-sp <- ggplot(diamonds, aes(x = carat, y = logprice))+
-  geom_point(alpha=0.2)+
+ggplot(diamonds, aes(x = carat, y = logprice))+
+  geom_point()+
   geom_smooth(method = "lm", se = FALSE, color = "red")+
-  labs(x = "Carat Weight", y = "log(Price)", title = "Scatter Plot of log(Price) against Carat Weight")+
-  theme_bw()
+  labs(x = "Carat Weight", y = "log(Price)", title = "Scatter Plot of log(Price) against Carat Weight")
+```
 
+```{r}
 logymodel <- lm(logprice~carat, data = diamonds)
 logyresid <- logymodel$residuals
 logyfitted <- logymodel$fitted.values
 
 diamonds <- data.frame(diamonds,logyresid,logyfitted)
 
-rp <- ggplot(diamonds, aes(x = logyfitted, y = logyresid))+
-  geom_point(alpha=0.2)+
+ggplot(diamonds, aes(x = logyfitted, y = logyresid))+
+  geom_point()+
   geom_hline(yintercept = 0, color = "red")+
-  labs(x = "Predicted log(Price)", y = "Residual", title = "Residual Plot of Simple Linear Regression Model with log(y) Transform")+
-  theme_bw()
-
-ggarrange(sp, rp,
-          ncol = 1, nrow = 2)
+  labs(x = "Predicted log(Price)", y = "Residual", title = "Residual Plot of Simple Linear Regression Model with log(y) Transform")
 ```
 
 |       With the natural logarithm transformation of price, the issue of non-constant variance was addressed much better than it was with the $\lambda = 0.3$ transform. However the issue of not having residuals with mean equal to zero persists. To address this, a logarithmic transformation of carat weight was conducted in order to bring the carat weight distribution closer to normal. Below are the scatter plots of log-transformed price vs. log-transformed carat weight and the residual plot of the simple linear regression that was applied.
@@ -176,26 +163,23 @@ ggarrange(sp, rp,
 logcarat <- log(diamonds$carat)
 diamonds <- data.frame(diamonds,logcarat)
 
-sp <- ggplot(diamonds, aes(x = logcarat, y = logprice))+
-  geom_point(alpha=0.2)+
+ggplot(diamonds, aes(x = logcarat, y = logprice))+
+  geom_point()+
   geom_smooth(method = "lm", se = FALSE, color = "red")+
-  labs(x = "log(Carat Weight)", y = "log(Price)", title = "Scatter Plot of log(Price) against log(Carat Weight)")+
-  theme_bw()
+  labs(x = "log(Carat Weight)", y = "log(Price)", title = "Scatter Plot of log(Price) against log(Carat Weight)")
+```
 
+```{r}
 logbothmodel <- lm(logprice~logcarat, data = diamonds)
 logbothresid <- logbothmodel$residuals
 logbothfitted <- logbothmodel$fitted.values
 
 diamonds <- data.frame(diamonds,logbothresid,logbothfitted)
 
-rp <- ggplot(diamonds, aes(x = logbothfitted, y = logbothresid))+
-  geom_point(alpha=0.2)+
+ggplot(diamonds, aes(x = logbothfitted, y = logbothresid))+
+  geom_point()+
   geom_hline(yintercept = 0, color = "red")+
-  labs(x = "Predicted log(Price)", y = "Residual", title = "Residual Plot of Simple Linear Regression Model with log(y) and log(x) Transforms")+
-  theme_bw()
-
-ggarrange(sp, rp,
-          ncol = 1, nrow = 2)
+  labs(x = "Predicted log(Price)", y = "Residual", title = "Residual Plot of Simple Linear Regression Model with log(y) and log(x) Transforms")
 ```
 
 This simple linear regression model satisfied both of the following assumptions:  
@@ -205,7 +189,6 @@ This simple linear regression model satisfied both of the following assumptions:
 |       To determine if this model satisfies the assumptions regarding error independence and whether the error term follows a normal distribution, an auto-correlation function plot and QQ plot were generated.
 
 ```{r}
-par(mar=c(5,4,4,2))
 acf(diamonds$logbothresid, main = "ACF Plot of Residuals")
 ```
 
@@ -218,20 +201,6 @@ qqline(diamonds$logbothresid, col = "red")
 ```
 
 |       There are deviations from normality near the extremes of theoretical quantiles, but otherwise the residuals closely align with the normal distribution. This satisfies the fourth and final assumption for simple linear regression: the errors, for each fixed value of x, follow a normal distribution. 
-```{r}
-x_vec = seq(from = 0, to = 7, by = 0.01)
-beta1 = logbothmodel$coefficients[2]
-beta0 = logbothmodel$coefficients[1]
-df = data.frame(cbind(x_vec))
-df <- df %>% 
-  mutate(prediction = exp((beta1*log(x_vec) + beta0)))
-
-ggplot(Data, aes(x=carat, y=price))+
-  geom_point(alpha=0.2)+
-  geom_line(data=df, aes(x = x_vec, y = prediction) ,color='red')+
-  labs(x='Carat Weight',y='Price ($)',title='Scatter Plot of Price against Carat Weight')+
-  theme_bw()
-```
 
 The final regression expression is:  
   
